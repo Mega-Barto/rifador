@@ -29,6 +29,13 @@ const SEED_ASSIGNMENTS = [
   { nombre: 'Luis', contacto: '', numeros: [92] },
 ]
 
+function fold(text) {
+  return text
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+}
+
 function loadAssignments() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -305,6 +312,7 @@ export default function App() {
   const [editingIndex, setEditingIndex] = useState(null)
   const [message, setMessage] = useState(null)
   const [confirm, setConfirm] = useState(null)
+  const [query, setQuery] = useState('')
   const fileRef = useRef(null)
 
   useEffect(() => {
@@ -326,6 +334,20 @@ export default function App() {
   }, [assignments])
 
   const sortedSelected = useMemo(() => [...selected].sort((a, b) => a - b), [selected])
+
+  const needle = fold(query.trim())
+  const visible = useMemo(() => {
+    return assignments
+      .map((a, index) => ({ a, index }))
+      .filter(({ a }) => !needle || fold(a.nombre).includes(needle))
+  }, [assignments, needle])
+
+  const matchNumbers = useMemo(() => {
+    if (!needle) return null
+    const set = new Set()
+    visible.forEach(({ a }) => a.numeros.forEach((n) => set.add(n)))
+    return set
+  }, [visible, needle])
 
   // Devuelve un mensaje de error o null si se marcó bien.
   function addNumber(n) {
@@ -462,11 +484,12 @@ export default function App() {
               const owner = owners.get(n)
               const isSelected = selected.has(n)
               const cls = owner ? 'cell assigned' : isSelected ? 'cell selected' : 'cell'
+              const found = matchNumbers?.has(n)
               return (
                 <button
                   key={n}
                   type="button"
-                  className={`${cls}${isMobile ? ' readonly' : ''}`}
+                  className={`${cls}${isMobile ? ' readonly' : ''}${found ? ' found' : ''}`}
                   onClick={() => toggle(n)}
                   disabled={!!owner}
                   tabIndex={isMobile ? -1 : undefined}
@@ -530,12 +553,23 @@ export default function App() {
             </div>
           </div>
 
+          <input
+            className="search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por nombre"
+            aria-label="Buscar asignaciones por nombre"
+          />
+
           {assignments.length === 0 ? (
             <p className="empty">Aún no hay números asignados.</p>
+          ) : visible.length === 0 ? (
+            <p className="empty">Nadie coincide con «{query.trim()}».</p>
           ) : (
             <ul className="list">
-              {assignments.map((a, i) => (
-                <li key={i} className="card">
+              {visible.map(({ a, index }) => (
+                <li key={index} className="card">
                   <div className="card-top">
                     <strong>{a.nombre}</strong>
                     {a.contacto ? <span className="contact">{a.contacto}</span> : null}
@@ -548,10 +582,10 @@ export default function App() {
                     ))}
                   </div>
                   <div className="card-actions">
-                    <button type="button" className="btn small" onClick={() => setEditingIndex(i)}>
+                    <button type="button" className="btn small" onClick={() => setEditingIndex(index)}>
                       Editar
                     </button>
-                    <button type="button" className="btn small danger" onClick={() => handleDelete(i)}>
+                    <button type="button" className="btn small danger" onClick={() => handleDelete(index)}>
                       Borrar
                     </button>
                   </div>

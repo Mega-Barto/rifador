@@ -66,12 +66,16 @@
 /* Cuadrícula */
 .grid {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
+  grid-template-columns: repeat(10, minmax(0, 1fr));
   gap: 6px;
+  width: 100%;
 }
 .cell {
   position: relative;
+  min-width: 0;
+  width: 100%;
   aspect-ratio: 1;
+  padding: 0;
   border: 2px solid var(--green-light);
   border-radius: 10px;
   background: #fff;
@@ -149,6 +153,52 @@
   border-color: var(--green-light);
 }
 
+@media (max-width: 640px) {
+  .app {
+    padding: 12px 8px 28px;
+  }
+  .header h1 {
+    font-size: 1.35rem;
+  }
+  .subtitle {
+    font-size: 0.92rem;
+  }
+  .stats {
+    display: flex;
+    max-width: 100%;
+    gap: 8px 14px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .board-section,
+  .side {
+    padding: 10px;
+    border-radius: 14px;
+  }
+  .grid {
+    gap: 3px;
+  }
+  .cell {
+    border-width: 1.5px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+  }
+  .cell .num-small {
+    right: 1px;
+    bottom: 0;
+    font-size: 0.48em;
+  }
+  .picker-row {
+    flex-wrap: wrap;
+  }
+  .picker input,
+  .picker-row .btn {
+    flex: 1 1 8rem;
+  }
+}
+
 /* Botones */
 .actions {
   display: flex;
@@ -203,6 +253,22 @@
 .io {
   display: flex;
   gap: 6px;
+}
+.search {
+  width: 100%;
+  font: inherit;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 2px solid #cfc8b6;
+  border-radius: 10px;
+  background: #fff;
+}
+.search:focus {
+  outline: none;
+  border-color: var(--green-light);
+}
+.cell.found {
+  box-shadow: 0 0 0 3px var(--gold);
 }
 .empty {
   color: #777;

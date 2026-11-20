@@ -1,0 +1,372 @@
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.header {
+  text-align: center;
+  color: #fff;
+  margin-bottom: 20px;
+}
+.header h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.subtitle {
+  margin: 4px 0 12px;
+  opacity: 0.9;
+}
+.stats {
+  display: inline-flex;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 8px 18px;
+  border-radius: 999px;
+}
+.stats strong {
+  color: var(--gold);
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.board-section {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.side {
+  min-width: 0;
+}
+
+.msg.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  z-index: 30;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  margin: 0;
+}
+
+.board-section,
+.side {
+  background: var(--snow);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Cuadrícula */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+}
+.cell {
+  position: relative;
+  aspect-ratio: 1;
+  border: 2px solid var(--green-light);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--green);
+  font-size: clamp(0.8rem, 2.4vw, 1.15rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: transform 0.08s, background 0.15s;
+}
+.cell:hover:not(:disabled) {
+  background: #e8f5e9;
+  transform: translateY(-1px);
+}
+.cell.selected {
+  background: #d9d4c7;
+  border-color: #b5ae9b;
+  color: #5f5a4a;
+}
+.cell.selected:hover:not(:disabled) {
+  background: #cfc9b8;
+}
+.cell .mark {
+  font-size: 1.3em;
+  line-height: 1;
+}
+.cell .num-small {
+  position: absolute;
+  bottom: 1px;
+  right: 4px;
+  font-size: 0.55em;
+  opacity: 0.85;
+}
+.cell.assigned {
+  background: var(--red);
+  border-color: var(--red-dark);
+  color: #fff;
+  cursor: not-allowed;
+}
+
+/* Modo responsive: la cuadrícula es solo de lectura, se marca con el input */
+.cell.readonly {
+  cursor: default;
+  pointer-events: none;
+}
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 2px dashed var(--green-light);
+  border-radius: 12px;
+  background: #fff;
+}
+.picker label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.picker-row {
+  display: flex;
+  gap: 8px;
+}
+.picker input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 1.1rem;
+  padding: 10px;
+  border: 2px solid #cfc8b6;
+  border-radius: 8px;
+}
+.picker input:focus {
+  outline: none;
+  border-color: var(--green-light);
+}
+
+/* Botones */
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.btn {
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 2px solid var(--green-light);
+  background: #fff;
+  color: var(--green);
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) {
+  background: #e8f5e9;
+}
+.btn.primary {
+  background: var(--red);
+  border-color: var(--red-dark);
+  color: #fff;
+}
+.btn.primary:hover:not(:disabled) {
+  background: var(--red-dark);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn.small {
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+/* Lateral */
+.side-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.side h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--red);
+}
+.io {
+  display: flex;
+  gap: 6px;
+}
+.empty {
+  color: #777;
+  font-style: italic;
+}
+.msg {
+  font-size: 0.85rem;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin: 0 0 10px;
+}
+.msg.ok {
+  background: #e8f5e9;
+  color: var(--green);
+}
+.msg.error {
+  background: #ffebee;
+  color: var(--red-dark);
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+.card {
+  flex: 0 0 230px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  border: 1px solid #e3dccb;
+  border-left: 5px solid var(--red);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+}
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.contact {
+  color: #666;
+  font-size: 0.9rem;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chip {
+  background: var(--green-light);
+  color: #fff;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.btn.danger {
+  border-color: var(--red);
+  color: var(--red);
+}
+.btn.danger:hover:not(:disabled) {
+  background: #ffebee;
+}
+.chip.removable {
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  background: var(--red);
+}
+.chip.removable:hover {
+  background: var(--red-dark);
+}
+.hint {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: -8px;
+}
+.push-left {
+  margin-right: auto;
+}
+
+/* Modal */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 10;
+}
+.modal {
+  background: var(--snow);
+  border-radius: 16px;
+  padding: 22px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  border-top: 6px solid var(--red);
+}
+.backdrop.top {
+  z-index: 20;
+}
+.modal.confirm {
+  max-width: 380px;
+}
+.confirm-text {
+  margin: 0;
+  line-height: 1.4;
+}
+.btn.danger-solid {
+  background: var(--red);
+  border-color: var(--red-dark);
+  color: #fff;
+}
+.btn.danger-solid:hover:not(:disabled) {
+  background: var(--red-dark);
+}
+.modal h2 {
+  margin: 0;
+  color: var(--red);
+}
+.modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.modal input {
+  font: inherit;
+  padding: 10px;
+  border: 2px solid #cfc8b6;
+  border-radius: 8px;
+}
+.modal input:focus {
+  outline: none;
+  border-color: var(--green-light);
+}
+.error {
+  color: var(--red);
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

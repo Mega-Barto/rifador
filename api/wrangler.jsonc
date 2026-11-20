@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rifador-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rifador",
+      "database_id": "829768c1-b6f5-405b-90e7-dd69c9c9978c",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

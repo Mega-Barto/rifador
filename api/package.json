@@ -1,0 +1,14 @@
+{
+  "name": "rifador-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 migrations apply rifador --local"
+  },
+  "devDependencies": {
+    "cf": "^0.15.0",
+    "wrangler": "^4.166.0"
+  }
+}

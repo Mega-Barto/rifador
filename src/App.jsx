@@ -1,49 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
-const STORAGE_KEY = 'rifador:asignaciones:v2'
+const API_URL = import.meta.env.VITE_API_URL ?? ''
 const NUMBERS = Array.from({ length: 100 }, (_, i) => i)
 
-// Datos iniciales de la rifa (contacto opcional).
-const SEED_ASSIGNMENTS = [
-  { nombre: 'Alais', contacto: '', numeros: [6, 29] },
-  { nombre: 'Ferney Marcela', contacto: '', numeros: [7] },
-  { nombre: 'Claudia Molano', contacto: '', numeros: [8] },
-  { nombre: 'Olga Lucia G 💰', contacto: '', numeros: [10, 20, 83] },
-  { nombre: 'Martin Toro', contacto: '', numeros: [11] },
-  { nombre: 'Yenni 💰', contacto: '', numeros: [14, 84] },
-  { nombre: 'Faisury 💰', contacto: '', numeros: [17, 19, 22, 26, 30, 82] },
-  { nombre: 'Estela Gallego 💰', contacto: '', numeros: [18] },
-  { nombre: 'Amparo García 💰', contacto: '', numeros: [25] },
-  { nombre: 'Lina Mitaca', contacto: '', numeros: [27] },
-  { nombre: 'Mabel G', contacto: '', numeros: [28, 98] },
-  { nombre: 'Santiago Valencia 💰', contacto: '', numeros: [35, 41] },
-  { nombre: 'Magda Compañera 💰', contacto: '', numeros: [37] },
-  { nombre: 'Clemencia', contacto: '', numeros: [44] },
-  { nombre: 'Don Alberto 💰', contacto: '', numeros: [49, 76] },
-  { nombre: 'Doña Rosa 301', contacto: '', numeros: [63] },
-  { nombre: 'Martica clínica', contacto: '', numeros: [65] },
-  { nombre: 'María Iboneth 💰', contacto: '', numeros: [70] },
-  { nombre: 'Angelita mamacita.', contacto: '', numeros: [71] },
-  { nombre: 'Camilo Toro', contacto: '', numeros: [73] },
-  { nombre: 'Luis', contacto: '', numeros: [92] },
-]
+async function api(path, options = {}) {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: { 'content-type': 'application/json', ...options.headers },
+  })
+  if (res.status === 204) return null
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'No se pudo conectar con la base de datos.')
+  return data
+}
 
 function fold(text) {
   return text
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
     .toLowerCase()
-}
-
-function loadAssignments() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return SEED_ASSIGNMENTS
-    return validateAssignments(JSON.parse(raw))
-  } catch {
-    return SEED_ASSIGNMENTS
-  }
 }
 
 // Acepta un array o { asignaciones: [...] }. Lanza Error si es inválido.
@@ -306,18 +282,22 @@ function useIsMobile() {
 
 export default function App() {
   const isMobile = useIsMobile()
-  const [assignments, setAssignments] = useState(loadAssignments)
+  const [assignments, setAssignments] = useState([])
+  const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(() => new Set())
   const [modalOpen, setModalOpen] = useState(false)
-  const [editingIndex, setEditingIndex] = useState(null)
+  const [editingId, setEditingId] = useState(null)
   const [message, setMessage] = useState(null)
   const [confirm, setConfirm] = useState(null)
   const [query, setQuery] = useState('')
   const fileRef = useRef(null)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(assignments))
-  }, [assignments])
+    api('/api/asignaciones')
+      .then((data) => setAssignments(data.asignaciones))
+      .catch((err) => setMessage({ type: 'error', text: err.message }))
+      .finally(() => setLoading(false))
+  }, [])
 
   // El aviso desaparece solo.
   useEffect(() => {
@@ -337,15 +317,13 @@ export default function App() {
 
   const needle = fold(query.trim())
   const visible = useMemo(() => {
-    return assignments
-      .map((a, index) => ({ a, index }))
-      .filter(({ a }) => !needle || fold(a.nombre).includes(needle))
+    return assignments.filter((a) => !needle || fold(a.nombre).includes(needle))
   }, [assignments, needle])
 
   const matchNumbers = useMemo(() => {
     if (!needle) return null
     const set = new Set()
-    visible.forEach(({ a }) => a.numeros.forEach((n) => set.add(n)))
+    visible.forEach((a) => a.numeros.forEach((n) => set.add(n)))
     return set
   }, [visible, needle])
 
@@ -377,27 +355,37 @@ export default function App() {
     })
   }
 
-  function handleSave({ nombre, contacto }) {
-    setAssignments((prev) => [...prev, { nombre, contacto, numeros: sortedSelected }])
+  async function handleSave({ nombre, contacto }) {
+    const created = await api('/api/asignaciones', {
+      method: 'POST',
+      body: JSON.stringify({ nombre, contacto, numeros: sortedSelected }),
+    })
+    setAssignments((prev) => [...prev, created])
     setSelected(new Set())
     setModalOpen(false)
   }
 
-  function handleEditSave({ nombre, contacto, numeros }) {
-    setAssignments((prev) => prev.map((a, i) => (i === editingIndex ? { nombre, contacto, numeros } : a)))
-    setEditingIndex(null)
+  async function handleEditSave({ nombre, contacto, numeros }) {
+    const updated = await api(`/api/asignaciones/${editingId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ nombre, contacto, numeros }),
+    })
+    setAssignments((prev) => prev.map((a) => (a.id === editingId ? updated : a)))
+    setEditingId(null)
   }
 
-  function handleDelete(index) {
-    const a = assignments[index]
+  function handleDelete(id) {
+    const a = assignments.find((item) => item.id === id)
+    if (!a) return
     setConfirm({
       title: 'Borrar asignación',
       message: `¿Borrar la asignación de ${a.nombre}? Sus ${a.numeros.length} número(s) quedarán libres.`,
       confirmLabel: 'Borrar',
       danger: true,
-      onConfirm: () => {
-        setAssignments((prev) => prev.filter((_, i) => i !== index))
-        setEditingIndex(null)
+      onConfirm: async () => {
+        await api(`/api/asignaciones/${id}`, { method: 'DELETE' })
+        setAssignments((prev) => prev.filter((item) => item.id !== id))
+        setEditingId(null)
       },
     })
   }
@@ -451,8 +439,12 @@ export default function App() {
             : '¿Cargarlas?'),
         confirmLabel: 'Cargar',
         danger: assignments.length > 0,
-        onConfirm: () => {
-          setAssignments(loaded)
+        onConfirm: async () => {
+          const data = await api('/api/asignaciones', {
+            method: 'PUT',
+            body: JSON.stringify({ asignaciones: loaded }),
+          })
+          setAssignments(data.asignaciones)
           setSelected(new Set())
           setMessage({ type: 'ok', text: `Se cargaron ${loaded.length} asignaciones.` })
         },
@@ -562,14 +554,16 @@ export default function App() {
             aria-label="Buscar asignaciones por nombre"
           />
 
-          {assignments.length === 0 ? (
+          {loading ? (
+            <p className="empty">Cargando asignaciones…</p>
+          ) : assignments.length === 0 ? (
             <p className="empty">Aún no hay números asignados.</p>
           ) : visible.length === 0 ? (
             <p className="empty">Nadie coincide con «{query.trim()}».</p>
           ) : (
             <ul className="list">
-              {visible.map(({ a, index }) => (
-                <li key={index} className="card">
+              {visible.map((a) => (
+                <li key={a.id} className="card">
                   <div className="card-top">
                     <strong>{a.nombre}</strong>
                     {a.contacto ? <span className="contact">{a.contacto}</span> : null}
@@ -582,10 +576,10 @@ export default function App() {
                     ))}
                   </div>
                   <div className="card-actions">
-                    <button type="button" className="btn small" onClick={() => setEditingIndex(index)}>
+                    <button type="button" className="btn small" onClick={() => setEditingId(a.id)}>
                       Editar
                     </button>
-                    <button type="button" className="btn small danger" onClick={() => handleDelete(index)}>
+                    <button type="button" className="btn small danger" onClick={() => handleDelete(a.id)}>
                       Borrar
                     </button>
                   </div>
@@ -610,14 +604,14 @@ export default function App() {
         />
       )}
 
-      {editingIndex !== null && assignments[editingIndex] && (
+      {editingId !== null && assignments.some((a) => a.id === editingId) && (
         <AssignModal
           editing
-          initial={assignments[editingIndex]}
-          numbers={assignments[editingIndex].numeros}
-          onClose={() => setEditingIndex(null)}
+          initial={assignments.find((a) => a.id === editingId)}
+          numbers={assignments.find((a) => a.id === editingId).numeros}
+          onClose={() => setEditingId(null)}
           onSave={handleEditSave}
-          onDelete={() => handleDelete(editingIndex)}
+          onDelete={() => handleDelete(editingId)}
         />
       )}
 
@@ -628,7 +622,7 @@ export default function App() {
           onAccept={() => {
             const fn = confirm.onConfirm
             setConfirm(null)
-            fn()
+            Promise.resolve(fn()).catch((err) => setMessage({ type: 'error', text: err.message }))
           }}
         />
       )}
@@ -736,7 +730,7 @@ function AssignModal({ numbers: initialNumbers, initial, editing = false, onClos
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault()
     const errs = {}
     const name = nombre.trim()
@@ -745,7 +739,12 @@ function AssignModal({ numbers: initialNumbers, initial, editing = false, onClos
     if (phone && !/^\d{7,15}$/.test(phone)) errs.contacto = 'Poner un número válido.'
     if (numbers.length === 0) errs.numeros = 'Debe quedar al menos un número (o borra la asignación).'
     setErrors(errs)
-    if (Object.keys(errs).length === 0) onSave({ nombre: name, contacto: phone, numeros: numbers })
+    if (Object.keys(errs).length > 0) return
+    try {
+      await onSave({ nombre: name, contacto: phone, numeros: numbers })
+    } catch (err) {
+      setErrors({ form: err.message })
+    }
   }
 
   return (
@@ -774,6 +773,7 @@ function AssignModal({ numbers: initialNumbers, initial, editing = false, onClos
         </div>
         {editing && <span className="hint">Toca un número para quitarlo de esta asignación.</span>}
         {errors.numeros && <span className="error">{errors.numeros}</span>}
+        {errors.form && <span className="error">{errors.form}</span>}
 
         <label>
           Nombre
